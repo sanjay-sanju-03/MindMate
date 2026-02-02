@@ -6,11 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { authService } from "@/services";
+import { useAuth } from "@/contexts/AuthContext";
 import { validateEmail } from "@/utils/helpers";
 
 const SignIn = () => {
   const navigate = useNavigate();
+  const { signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -40,7 +41,7 @@ const SignIn = () => {
     setLoading(true);
 
     try {
-      await authService.signIn(email.trim(), password);
+      await signIn(email.trim(), password);
 
       toast({
         title: "Welcome back!",

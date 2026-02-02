@@ -17,9 +17,14 @@ import {
   Sparkles,
   ChevronRight,
   MessageCircle,
+  LogOut,
+  User,
+  Settings,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, isToday } from 'date-fns';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 interface DashboardProps {
   preferences: UserPreferences;
@@ -32,9 +37,24 @@ export function Dashboard({ preferences }: DashboardProps) {
   const [moodEntries, setMoodEntries] = useLocalStorage<MoodEntry[]>('mindmate-moods', []);
   const [journalEntries, setJournalEntries] = useLocalStorage<JournalEntry[]>('mindmate-journal', []);
   const [showMoodSuccess, setShowMoodSuccess] = useState(false);
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const todaysMood = moodEntries.find(entry => isToday(new Date(entry.date)));
-  const greeting = getGreeting(preferences.name);
+  const greeting = getGreeting(user?.name || preferences.name);
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigate('/signin');
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  };
+
+  const handleGoToProfile = () => {
+    navigate('/profile');
+  };
 
   const handleMoodSubmit = (mood: MoodType, note?: string) => {
     const newEntry: MoodEntry = {
@@ -75,13 +95,37 @@ export function Dashboard({ preferences }: DashboardProps) {
             <div>
               <h1 className="text-xl font-display font-bold text-foreground">MindMate</h1>
               <p className="text-sm text-muted-foreground">{greeting}</p>
+              {user && (
+                <p className="text-xs text-muted-foreground/70 mt-1">
+                  {user.email}
+                </p>
+              )}
             </div>
-            {todaysMood && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50">
-                <span className="text-lg">{moodConfig[todaysMood.mood].emoji}</span>
-                <span className="text-xs text-muted-foreground">Today</span>
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              {todaysMood && (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50">
+                  <span className="text-xs font-semibold text-muted-foreground">{moodConfig[todaysMood.mood].label}</span>
+                  <span className="text-xs text-muted-foreground">Today</span>
+                </div>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleGoToProfile}
+                title="Profile Settings"
+              >
+                <Settings className="w-5 h-5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleLogout}
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                title="Logout"
+              >
+                <LogOut className="w-5 h-5" />
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -112,7 +156,7 @@ export function Dashboard({ preferences }: DashboardProps) {
                 {todaysMood ? (
                   <div className="text-center py-6 space-y-4">
                     <div className="w-20 h-20 mx-auto rounded-full bg-muted/50 flex items-center justify-center">
-                      <span className="text-5xl">{moodConfig[todaysMood.mood].emoji}</span>
+                      <span className="text-sm font-semibold text-muted-foreground">{moodConfig[todaysMood.mood].label}</span>
                     </div>
                     <div>
                       <p className="font-medium">You're feeling {moodConfig[todaysMood.mood].label.toLowerCase()} today</p>

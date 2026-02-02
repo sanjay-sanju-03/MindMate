@@ -6,11 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { authService } from "@/services";
+import { useAuth } from "@/contexts/AuthContext";
 import { validateEmail, validatePassword } from "@/utils/helpers";
 
 const SignUp = () => {
   const navigate = useNavigate();
+  const { signUp } = useAuth();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -20,7 +22,7 @@ const SignUp = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email.trim() || !password.trim() || !confirmPassword.trim()) {
+    if (!name.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
       toast({
         title: "Missing fields",
         description: "Please fill in all fields.",
@@ -60,13 +62,13 @@ const SignUp = () => {
     setLoading(true);
 
     try {
-      await authService.signUp(email.trim(), password);
+      await signUp(email.trim(), password, name.trim());
 
       toast({
         title: "Account created!",
-        description: "Check your email to verify your account.",
+        description: "Welcome to MindMate!",
       });
-      navigate("/signin");
+      navigate("/home");
     } catch (error: any) {
       toast({
         title: "Sign up failed",
@@ -94,6 +96,19 @@ const SignUp = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSignUp} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Full Name</Label>
+              <Input
+                id="name"
+                type="text"
+                placeholder="Enter your full name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                disabled={loading}
+                className="bg-background"
+              />
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input

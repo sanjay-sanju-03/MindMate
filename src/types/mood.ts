@@ -22,11 +22,11 @@ export interface JournalEntry {
   content: string;
 }
 
-export const moodConfig: Record<MoodType, { emoji: string; label: string; color: string }> = {
-  happy: { emoji: '😊', label: 'Happy', color: 'bg-mood-happy' },
-  neutral: { emoji: '😐', label: 'Neutral', color: 'bg-mood-neutral' },
-  stressed: { emoji: '😟', label: 'Stressed', color: 'bg-mood-stressed' },
-  anxious: { emoji: '😰', label: 'Anxious', color: 'bg-mood-anxious' },
-  tired: { emoji: '😴', label: 'Tired', color: 'bg-mood-tired' },
-  angry: { emoji: '😡', label: 'Angry', color: 'bg-mood-angry' },
+export const moodConfig: Record<MoodType, { label: string; color: string }> = {
+  happy: { label: 'Happy', color: 'bg-mood-happy' },
+  neutral: { label: 'Neutral', color: 'bg-mood-neutral' },
+  stressed: { label: 'Stressed', color: 'bg-mood-stressed' },
+  anxious: { label: 'Anxious', color: 'bg-mood-anxious' },
+  tired: { label: 'Tired', color: 'bg-mood-tired' },
+  angry: { label: 'Angry', color: 'bg-mood-angry' },
 };

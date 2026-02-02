@@ -3,7 +3,7 @@ import { MoodEntry, JournalEntry } from '@/types/mood';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // Helper to get token
-const getToken = () => localStorage.getItem('authToken');
+const getToken = () => localStorage.getItem('auth_token');
 
 // Auth Service
 export const authService = {
@@ -20,16 +20,16 @@ export const authService = {
     }
 
     const data = await response.json();
-    localStorage.setItem('authToken', data.token);
+    localStorage.setItem('auth_token', data.token);
     localStorage.setItem('user', JSON.stringify(data.user));
     return data;
   },
 
-  async signUp(email: string, password: string) {
+  async signUp(email: string, password: string, name: string) {
     const response = await fetch(`${API_URL}/auth/signup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, name }),
     });
 
     if (!response.ok) {
@@ -38,13 +38,13 @@ export const authService = {
     }
 
     const data = await response.json();
-    localStorage.setItem('authToken', data.token);
+    localStorage.setItem('auth_token', data.token);
     localStorage.setItem('user', JSON.stringify(data.user));
     return data;
   },
 
   async signOut() {
-    localStorage.removeItem('authToken');
+    localStorage.removeItem('auth_token');
     localStorage.removeItem('user');
   },
 

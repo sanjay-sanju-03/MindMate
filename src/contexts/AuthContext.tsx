@@ -1,83 +1,193 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
 import { UserPreferences } from '@/types/mood';
+
+interface User {
+  _id: string;
+  email: string;
+  name: string;
+  preferences: UserPreferences;
+  createdAt?: string;
+  updatedAt?: string;
+}
 
 interface AuthContextType {
   user: User | null;
-  session: Session | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   userPreferences: UserPreferences | null;
   signOut: () => Promise<void>;
+  updateProfile: (name: string, preferences: Partial<UserPreferences>) => Promise<User>;
   updateUserPreferences: (preferences: Partial<UserPreferences>) => void;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<{ token: string; user: User }>;
+  signUp: (email: string, password: string, name: string) => Promise<{ token: string; user: User }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
 
   useEffect(() => {
-    // Check current session
-    const checkSession = async () => {
+    // Check if user is already logged in
+    const checkAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setSession(session);
-        setUser(session?.user ?? null);
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+          const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          });
 
-        if (session?.user) {
-          // Load user preferences from localStorage
-          const saved = localStorage.getItem(`prefs-${session.user.id}`);
-          if (saved) {
-            setUserPreferences(JSON.parse(saved));
+          if (response.ok) {
+            const userData = await response.json();
+            setUser(userData);
+            setUserPreferences(userData.preferences || null);
           } else {
-            setUserPreferences({
-              hasCompletedOnboarding: false,
-            });
+            // Token is invalid, clear it
+            localStorage.removeItem('auth_token');
           }
         }
       } catch (error) {
-        console.error('Error checking session:', error);
+        console.error('Error checking auth:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    checkSession();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-
-        if (event === 'SIGNED_OUT') {
-          setUserPreferences(null);
-          localStorage.removeItem(`prefs-${session?.user?.id}`);
-        } else if (session?.user) {
-          const saved = localStorage.getItem(`prefs-${session.user.id}`);
-          if (saved) {
-            setUserPreferences(JSON.parse(saved));
-          }
-        }
-      }
-    );
-
-    return () => subscription?.unsubscribe();
+    checkAuth();
   }, []);
+
+  const signIn = async (email: string, password: string) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/signin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Sign in failed');
+      }
+
+      const { token, user: userData } = await response.json();
+      localStorage.setItem('auth_token', token);
+      setUser(userData);
+      setUserPreferences(userData.preferences || null);
+      return { token, user: userData };
+    } catch (error) {
+      console.error('Error signing in:', error);
+      throw error;
+    }
+  };
+
+  const signUp = async (email: string, password: string, name: string) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password, name }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Sign up failed');
+      }
+
+      const { token, user: userData } = await response.json();
+      localStorage.setItem('auth_token', token);
+      setUser(userData);
+      setUserPreferences(userData.preferences || null);
+      return { token, user: userData };
+    } catch (error) {
+      console.error('Error signing up:', error);
+      throw error;
+    }
+  };
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut();
+      const token = localStorage.getItem('auth_token');
+      // Call logout endpoint for server-side session cleanup
+      if (token) {
+        await fetch(`${import.meta.env.VITE_API_URL}/auth/logout`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }).catch(err => console.error('Logout API error:', err));
+      }
+      
+      localStorage.removeItem('auth_token');
       setUser(null);
-      setSession(null);
       setUserPreferences(null);
     } catch (error) {
       console.error('Error signing out:', error);
+      throw error;
+    }
+  };
+
+  const updateProfile = async (name: string, preferences: Partial<UserPreferences>) => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name,
+          preferences: { ...userPreferences, ...preferences },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Profile update failed');
+      }
+
+      const updatedUser = await response.json();
+      setUser(updatedUser);
+      setUserPreferences(updatedUser.preferences || null);
+      return updatedUser;
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      throw error;
+    }
+  };
+
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/change-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Password change failed');
+      }
+    } catch (error) {
+      console.error('Error changing password:', error);
       throw error;
     }
   };
@@ -86,18 +196,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user) {
       const updated = { ...userPreferences, ...preferences } as UserPreferences;
       setUserPreferences(updated);
-      localStorage.setItem(`prefs-${user.id}`, JSON.stringify(updated));
     }
   };
 
   const value: AuthContextType = {
     user,
-    session,
     isLoading,
-    isAuthenticated: !!session,
+    isAuthenticated: !!user,
     userPreferences,
+    signIn,
+    signUp,
     signOut,
+    updateProfile,
     updateUserPreferences,
+    changePassword,
   };
 
   return (
