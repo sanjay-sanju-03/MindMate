@@ -1,12 +1,11 @@
 # Backend Dockerfile - Node.js + Express
-# This Dockerfile is for local development
-# Back4App uses the root Dockerfile
+# Build context: ./server (from Back4App root directory setting)
 FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy package files
-COPY package.json package-lock.json ./
+# Copy package files (relative to server/ directory)
+COPY package.json ./
 
 # Install dependencies
 RUN npm install
