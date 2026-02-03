@@ -22,8 +22,8 @@ services:
   # Backend - Node.js + Express
   backend:
     build:
-      context: ./server
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: server/Dockerfile
     container_name: mindmate-backend
     ports:
       - "5000:5000"
