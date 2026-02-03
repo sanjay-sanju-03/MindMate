@@ -14,12 +14,8 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/mindma
 
 // Middleware
 const corsOptions = {
-  origin: [
-    'http://localhost:3000',
-    'http://localhost:5173',
-    'https://mind-mate-opal.vercel.app'
-  ],
-  credentials: true,
+  origin: '*',
+  credentials: false,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 };
