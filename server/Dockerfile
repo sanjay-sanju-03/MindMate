@@ -10,7 +10,7 @@ COPY server/package.json server/package-lock.json ./
 RUN npm install
 
 # Copy source code
-COPY server . .
+COPY server/ .
 
 # Expose port
 EXPOSE 5000
