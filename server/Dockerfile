@@ -1,4 +1,6 @@
 # Backend Dockerfile - Node.js + Express
+# This Dockerfile is for local development
+# Back4App uses the root Dockerfile
 FROM node:18-alpine
 
 WORKDIR /app
