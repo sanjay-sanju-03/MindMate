@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { UserPreferences } from '@/types/mood';
-import { Heart, ChevronRight, GraduationCap, Brain, Users, Sparkles } from 'lucide-react';
+import { Heart, ChevronRight, GraduationCap, Brain, Users, Sparkles, Loader2, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { authService } from '@/services';
+import { useToast } from '@/hooks/use-toast';
 
 interface OnboardingProps {
   onComplete: (preferences: UserPreferences) => void;
@@ -16,14 +18,63 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   const [name, setName] = useState('');
   const [studyLevel, setStudyLevel] = useState<UserPreferences['studyLevel']>();
   const [stressSource, setStressSource] = useState<UserPreferences['stressSource']>();
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
-  const handleComplete = () => {
-    onComplete({
+  // Save preferences to backend
+  const savePreferences = async (prefs: Partial<UserPreferences>) => {
+    try {
+      setLoading(true);
+      await authService.updateProfile({
+        name: prefs.name,
+        studyLevel: prefs.studyLevel,
+        stressSource: prefs.stressSource,
+      });
+      return true;
+    } catch (error) {
+      console.error('Failed to save preferences:', error);
+      toast({
+        title: 'Info',
+        description: 'Preferences saved locally',
+      });
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleNameSave = async () => {
+    await savePreferences({ name });
+    setStep('level');
+  };
+
+  const handleLevelSave = async () => {
+    await savePreferences({ studyLevel });
+    setStep('stress');
+  };
+
+  const handleStressSave = async () => {
+    await savePreferences({ stressSource });
+    setStep('complete');
+  };
+
+  const handleComplete = async () => {
+    const finalPrefs: UserPreferences = {
       name: name.trim() || undefined,
       studyLevel,
       stressSource,
       hasCompletedOnboarding: true,
-    });
+    };
+    
+    await savePreferences(finalPrefs);
+    onComplete(finalPrefs);
+  };
+
+  // Progress bar
+  const getProgressPercentage = () => {
+    const steps: Step[] = ['welcome', 'disclaimer', 'name', 'level', 'stress', 'complete'];
+    const currentIndex = steps.indexOf(step);
+    return ((currentIndex + 1) / steps.length) * 100;
   };
 
   const studyLevels = [
@@ -40,7 +91,15 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   ] as const;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 gradient-warm">
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 gradient-warm relative">
+      {/* Progress Bar */}
+      <div className="absolute top-0 left-0 right-0 h-1 bg-muted/20">
+        <div 
+          className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500"
+          style={{ width: `${getProgressPercentage()}%` }}
+        />
+      </div>
+
       <div className="w-full max-w-md">
         {step === 'welcome' && (
           <div className="text-center space-y-8 animate-fade-in">
@@ -122,13 +181,20 @@ export function Onboarding({ onComplete }: OnboardingProps) {
               onChange={(e) => setName(e.target.value)}
               placeholder="Your name or nickname"
               className="text-center text-lg h-14 rounded-2xl bg-muted/30"
+              disabled={loading}
             />
 
             <div className="flex gap-3">
-              <Button variant="ghost" onClick={() => setStep('level')} className="flex-1">
+              <Button variant="ghost" onClick={() => setStep('level')} disabled={loading} className="flex-1">
                 Skip
               </Button>
-              <Button variant="calm" onClick={() => setStep('level')} className="flex-1">
+              <Button 
+                variant="calm" 
+                onClick={handleNameSave} 
+                disabled={loading}
+                className="flex-1 gap-2"
+              >
+                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                 Continue
               </Button>
             </div>
@@ -148,8 +214,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                 <button
                   key={level.value}
                   onClick={() => setStudyLevel(level.value)}
+                  disabled={loading}
                   className={cn(
-                    "p-4 rounded-2xl border-2 transition-all text-center",
+                    "p-4 rounded-2xl border-2 transition-all text-center disabled:opacity-50",
                     studyLevel === level.value
                       ? "border-primary bg-primary/10"
                       : "border-transparent bg-muted/30 hover:bg-muted/50"
@@ -162,10 +229,16 @@ export function Onboarding({ onComplete }: OnboardingProps) {
             </div>
 
             <div className="flex gap-3">
-              <Button variant="ghost" onClick={() => setStep('stress')} className="flex-1">
+              <Button variant="ghost" onClick={() => setStep('stress')} disabled={loading} className="flex-1">
                 Skip
               </Button>
-              <Button variant="calm" onClick={() => setStep('stress')} className="flex-1">
+              <Button 
+                variant="calm" 
+                onClick={handleLevelSave}
+                disabled={loading}
+                className="flex-1 gap-2"
+              >
+                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                 Continue
               </Button>
             </div>
@@ -185,8 +258,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                 <button
                   key={source.value}
                   onClick={() => setStressSource(source.value)}
+                  disabled={loading}
                   className={cn(
-                    "w-full p-4 rounded-2xl border-2 transition-all text-left flex items-center gap-4",
+                    "w-full p-4 rounded-2xl border-2 transition-all text-left flex items-center gap-4 disabled:opacity-50",
                     stressSource === source.value
                       ? "border-primary bg-primary/10"
                       : "border-transparent bg-muted/30 hover:bg-muted/50"
@@ -204,13 +278,60 @@ export function Onboarding({ onComplete }: OnboardingProps) {
             </div>
 
             <div className="flex gap-3">
-              <Button variant="ghost" onClick={handleComplete} className="flex-1">
+              <Button variant="ghost" onClick={handleStressSave} disabled={loading} className="flex-1">
                 Skip
               </Button>
-              <Button variant="calm" onClick={handleComplete} className="flex-1">
+              <Button 
+                variant="calm" 
+                onClick={handleStressSave}
+                disabled={loading}
+                className="flex-1 gap-2"
+              >
+                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                 Finish Setup
               </Button>
             </div>
+          </div>
+        )}
+
+        {step === 'complete' && (
+          <div className="text-center space-y-8 animate-fade-in">
+            <div className="w-24 h-24 mx-auto rounded-full bg-green-100 flex items-center justify-center animate-bounce">
+              <CheckCircle2 className="w-12 h-12 text-green-600" />
+            </div>
+            
+            <div className="space-y-3">
+              <h1 className="text-3xl font-display font-bold text-foreground">
+                All Set!
+              </h1>
+              <p className="text-lg text-muted-foreground">
+                Your profile is ready to go
+              </p>
+            </div>
+
+            <p className="text-muted-foreground leading-relaxed">
+              Start tracking your moods and accessing personalized wellness tools designed just for you.
+            </p>
+
+            <Button 
+              variant="calm" 
+              size="xl" 
+              onClick={handleComplete}
+              disabled={loading}
+              className="w-full gap-2"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Setting up...
+                </>
+              ) : (
+                <>
+                  Go to Dashboard
+                  <ChevronRight className="w-5 h-5" />
+                </>
+              )}
+            </Button>
           </div>
         )}
       </div>
