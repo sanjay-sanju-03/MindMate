@@ -8,7 +8,6 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import Index from "./pages/Index";
-import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
@@ -41,7 +40,7 @@ const App = () => (
               path="/dashboard"
               element={
                 <ProtectedRoute>
-                  <Dashboard />
+                  <Index />
                 </ProtectedRoute>
               }
             />
