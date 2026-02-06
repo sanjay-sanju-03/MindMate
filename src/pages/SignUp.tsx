@@ -84,7 +84,7 @@ const SignUp = () => {
     <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6">
       {/* Logo */}
       <div className="icon-container mb-6">
-        <img src="/logo.png" alt="MindMate Logo" className="w-16 h-16 object-contain" />
+        <img src="/logo.png" alt="MindMate Logo" className="w-40 h-40 object-contain" />
       </div>
 
       <Card className="w-full max-w-md border-border/50 shadow-lg">
