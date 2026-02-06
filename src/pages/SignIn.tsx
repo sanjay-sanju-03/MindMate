@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Heart, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -61,9 +61,9 @@ const SignIn = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6">
-      {/* Icon */}
+      {/* Logo */}
       <div className="icon-container mb-6">
-        <Heart className="w-10 h-10 text-primary" />
+        <img src="/logo.png" alt="MindMate Logo" className="w-16 h-16 object-contain" />
       </div>
 
       <Card className="w-full max-w-md border-border/50 shadow-lg">
